@@ -1,0 +1,90 @@
+// Product Types
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  discount?: number;
+  image: string;
+  images?: string[];
+  category: string;
+  subcategory?: string;
+  inStock: boolean;
+  stock?: number;
+  catalogId?: string;
+  catalogName?: string;
+  pdfPage?: number;
+  pdfItemRef?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Catalog {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  type?: string;
+  pdfFileName?: string;
+  coverImage?: string;
+  isActive: boolean;
+  sortOrder?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Cart Item Type
+export interface CartItem {
+  productId: string;
+  product: Product;
+  quantity: number;
+}
+
+// Order Types
+export interface Order {
+  id: string;
+  orderNumber: string;
+  customer: {
+    name?: string;
+    phone: string;
+    email: string;
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      pincode: string;
+    };
+  };
+  items: CartItem[];
+  subtotal: number;
+  discount: number;
+  couponCode?: string;
+  totalAmount: number;
+  paymentStatus: "pending" | "paid" | "failed";
+  orderStatus: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+  paymentId?: string;
+  razorpayOrderId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Checkout Form Data
+export interface CheckoutFormData {
+  name: string;
+  phone: string;
+  email: string;
+  street: string;
+  city: string;
+  state: string;
+  pincode: string;
+}
+
+// Payment Response
+export interface PaymentResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  receipt: string;
+}
+

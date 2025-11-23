@@ -1,0 +1,133 @@
+import { CartItem, Product } from "@/types";
+
+const CART_STORAGE_KEY = "ecommerce_cart";
+const WISHLIST_STORAGE_KEY = "ecommerce_wishlist";
+
+// Cart Utilities
+export function getCartFromStorage(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  
+  try {
+    const cartData = localStorage.getItem(CART_STORAGE_KEY);
+    return cartData ? JSON.parse(cartData) : [];
+  } catch (error) {
+    console.error("Error reading cart from storage:", error);
+    return [];
+  }
+}
+
+export function saveCartToStorage(cart: CartItem[]): void {
+  if (typeof window === "undefined") return;
+  
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch (error) {
+    console.error("Error saving cart to storage:", error);
+  }
+}
+
+export function addToCart(product: Product, quantity: number = 1): CartItem[] {
+  const cart = getCartFromStorage();
+  const existingItemIndex = cart.findIndex(
+    (item) => item.productId === product.id
+  );
+  
+  if (existingItemIndex >= 0) {
+    cart[existingItemIndex].quantity += quantity;
+  } else {
+    cart.push({
+      productId: product.id,
+      product,
+      quantity,
+    });
+  }
+  
+  saveCartToStorage(cart);
+  return cart;
+}
+
+export function removeFromCart(productId: string): CartItem[] {
+  const cart = getCartFromStorage();
+  const updatedCart = cart.filter((item) => item.productId !== productId);
+  saveCartToStorage(updatedCart);
+  return updatedCart;
+}
+
+export function updateCartItemQuantity(
+  productId: string,
+  quantity: number
+): CartItem[] {
+  const cart = getCartFromStorage();
+  const itemIndex = cart.findIndex((item) => item.productId === productId);
+  
+  if (itemIndex >= 0) {
+    if (quantity <= 0) {
+      return removeFromCart(productId);
+    }
+    cart[itemIndex].quantity = quantity;
+    saveCartToStorage(cart);
+  }
+  
+  return cart;
+}
+
+export function clearCart(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(CART_STORAGE_KEY);
+}
+
+export function getCartTotal(cart: CartItem[]): number {
+  return cart.reduce(
+    (total, item) => total + item.product.price * item.quantity,
+    0
+  );
+}
+
+export function getCartItemCount(cart: CartItem[]): number {
+  return cart.reduce((count, item) => count + item.quantity, 0);
+}
+
+// Wishlist Utilities
+export function getWishlistFromStorage(): string[] {
+  if (typeof window === "undefined") return [];
+  
+  try {
+    const wishlistData = localStorage.getItem(WISHLIST_STORAGE_KEY);
+    return wishlistData ? JSON.parse(wishlistData) : [];
+  } catch (error) {
+    console.error("Error reading wishlist from storage:", error);
+    return [];
+  }
+}
+
+export function saveWishlistToStorage(wishlist: string[]): void {
+  if (typeof window === "undefined") return;
+  
+  try {
+    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlist));
+  } catch (error) {
+    console.error("Error saving wishlist to storage:", error);
+  }
+}
+
+export function addToWishlist(productId: string): string[] {
+  const wishlist = getWishlistFromStorage();
+  if (!wishlist.includes(productId)) {
+    wishlist.push(productId);
+    saveWishlistToStorage(wishlist);
+  }
+  return wishlist;
+}
+
+export function removeFromWishlist(productId: string): string[] {
+  const wishlist = getWishlistFromStorage();
+  const updatedWishlist = wishlist.filter((id) => id !== productId);
+  saveWishlistToStorage(updatedWishlist);
+  return updatedWishlist;
+}
+
+export function isInWishlist(productId: string): boolean {
+  const wishlist = getWishlistFromStorage();
+  return wishlist.includes(productId);
+}
+
