@@ -1,30 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Product } from "@/types";
 import PriceBulkEditor from "@/components/admin/PriceBulkEditor";
-import toast from "react-hot-toast";
+import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 
 export default function PricesPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch("/api/admin/products");
-      const data = await response.json();
-      setProducts(data.products || []);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    products,
+    loading,
+    mutate,
+  } = useAdminProducts();
 
   if (loading) {
     return (
@@ -41,7 +25,7 @@ export default function PricesPage() {
         <p className="text-gray-600 mt-1">Bulk update product prices</p>
       </div>
 
-      <PriceBulkEditor products={products} onUpdate={fetchProducts} />
+      <PriceBulkEditor products={products} onUpdate={() => mutate()} />
     </div>
   );
 }

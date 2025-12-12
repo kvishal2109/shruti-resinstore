@@ -65,7 +65,7 @@ Edit `lib/data/coupons.ts` and add new coupon objects:
 ## Future Enhancements
 
 When admin panel is ready:
-- Move coupons to Firebase
+- Move coupons to Vercel Blob Storage
 - Add expiration dates
 - Add usage limits per customer
 - Add category-specific coupons

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder } from "@/lib/blob/orders";
-import { createRazorpayOrder } from "@/lib/razorpay/config";
 import { CheckoutFormData, CartItem } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -23,16 +22,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Razorpay order first
-    const receipt = `ORDER-${Date.now()}`;
-    const razorpayOrder = await createRazorpayOrder(totalAmount, receipt);
-
     // Create order in Vercel Blob
     const orderId = await createOrder(
       customerData,
       items,
       totalAmount,
-      razorpayOrder.id,
       subtotal,
       discount,
       couponCode
@@ -41,7 +35,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       orderId,
-      razorpayOrder,
     });
   } catch (error) {
     console.error("Error creating order:", error);

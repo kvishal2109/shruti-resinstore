@@ -22,9 +22,22 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Load sidebar state from localStorage on mount
+  useEffect(() => {
+    const savedSidebarState = localStorage.getItem("adminSidebarOpen");
+    if (savedSidebarState !== null) {
+      setSidebarOpen(savedSidebarState === "true");
+    }
+  }, []);
+
+  // Save sidebar state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("adminSidebarOpen", sidebarOpen.toString());
+  }, [sidebarOpen]);
 
   useEffect(() => {
     checkAuth();
@@ -63,7 +76,8 @@ export default function AdminLayout({
     }
   };
 
-  if (authenticated === null) {
+  // Show loading only briefly, then show sidebar
+  if (authenticated === null && pathname !== "/admin/login") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
@@ -71,9 +85,13 @@ export default function AdminLayout({
     );
   }
 
-  if (!authenticated || pathname === "/admin/login") {
+  // Only hide sidebar on login page
+  if (pathname === "/admin/login") {
     return <>{children}</>;
   }
+
+  // For all other admin pages, show sidebar even if auth check is pending
+  // This ensures sidebar is always visible
 
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -84,53 +102,71 @@ export default function AdminLayout({
     { href: "/admin/categories", label: "Categories", icon: Tag },
   ];
 
+
+  const renderNavLinks = (variant: "sidebar" | "pill") =>
+    navItems.map((item) => {
+      const Icon = item.icon;
+      const isActive = pathname === item.href;
+      if (variant === "sidebar") {
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => {
+              // Close sidebar on mobile when link is clicked
+              if (window.innerWidth < 768) {
+                setSidebarOpen(false);
+              }
+            }}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <Icon className="w-5 h-5" />
+            <span className="font-medium">{item.label}</span>
+          </Link>
+        );
+      }
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm whitespace-nowrap transition ${
+            isActive
+              ? "border-blue-600 bg-blue-50 text-blue-700"
+              : "border-transparent bg-gray-100 text-gray-600"
+          }`}
+        >
+          <Icon className="w-4 h-4" />
+          {item.label}
+        </Link>
+      );
+    });
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      {/* Sidebar - Always visible on desktop, toggleable on mobile */}
+      <aside 
+        className={`bg-white shadow-xl w-64 flex-shrink-0 h-screen fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } md:translate-x-0`}
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b">
             <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-gray-600 hover:text-gray-900"
+              className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Close sidebar"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <nav className="flex-1 p-4 space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              );
-            })}
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            {renderNavLinks("sidebar")}
           </nav>
 
           <div className="p-4 border-t">
@@ -145,26 +181,48 @@ export default function AdminLayout({
         </div>
       </aside>
 
+      {/* Sidebar overlay for mobile only */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="flex-1 flex flex-col min-w-0 md:ml-64">
         {/* Top bar */}
         <header className="bg-white shadow-sm border-b sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-600 hover:text-gray-900"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <h2 className="text-lg font-semibold text-gray-900">
-              {navItems.find((item) => item.href === pathname)?.label || "Admin"}
-            </h2>
-            <div className="w-6" /> {/* Spacer for mobile */}
+          <div className="px-4 py-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-3">
+                {/* Hamburger menu - visible on all screen sizes for sidebar toggle */}
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Toggle sidebar"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">
+                    magi.cofresin
+                  </p>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {navItems.find((item) => item.href === pathname)?.label ||
+                      "Admin"}
+                  </h2>
+                </div>
+              </div>
+              <div className="hidden md:flex items-center gap-3 text-sm text-gray-500">
+                Secure Admin Console
+              </div>
+            </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-4 lg:p-6">{children}</main>
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
       </div>
     </div>
   );

@@ -8,7 +8,6 @@ export async function createOrder(
   customerData: CheckoutFormData,
   items: CartItem[],
   totalAmount: number,
-  razorpayOrderId?: string,
   subtotal?: number,
   discount?: number,
   couponCode?: string
@@ -47,7 +46,6 @@ export async function createOrder(
       totalAmount,
       paymentStatus: "pending" as const,
       orderStatus: "pending" as const,
-      razorpayOrderId: razorpayOrderId || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -91,7 +89,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
  */
 export async function updateOrderPaymentStatus(
   orderId: string,
-  paymentStatus: "pending" | "paid" | "failed",
+  paymentStatus: "pending" | "pending_verification" | "paid" | "partial" | "failed",
   paymentId?: string
 ): Promise<void> {
   try {
@@ -109,6 +107,36 @@ export async function updateOrderPaymentStatus(
     await saveOrdersBlob(orders);
   } catch (error) {
     console.error("Error updating order payment status:", error);
+    throw error;
+  }
+}
+
+/**
+ * Verify payment manually (admin function)
+ */
+export async function verifyPaymentManually(
+  orderId: string,
+  verifiedAmount: number,
+  paymentStatus: "paid" | "partial" | "failed",
+  verifiedBy?: string
+): Promise<void> {
+  try {
+    const orders = await getOrdersBlob();
+    const order = orders.find((o: any) => o.id === orderId);
+    
+    if (!order) {
+      throw new Error(`Order with ID "${orderId}" not found`);
+    }
+    
+    order.paymentStatus = paymentStatus;
+    order.verifiedAmount = verifiedAmount;
+    order.verifiedAt = new Date();
+    if (verifiedBy) order.verifiedBy = verifiedBy;
+    order.updatedAt = new Date();
+    
+    await saveOrdersBlob(orders);
+  } catch (error) {
+    console.error("Error verifying payment:", error);
     throw error;
   }
 }

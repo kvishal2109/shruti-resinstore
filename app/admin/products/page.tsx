@@ -1,30 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Product } from "@/types";
 import ProductTable from "@/components/admin/ProductTable";
-import toast from "react-hot-toast";
+import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch("/api/admin/products");
-      const data = await response.json();
-      setProducts(data.products || []);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    products,
+    loading,
+    mutate: mutateProducts,
+  } = useAdminProducts();
 
   const handleDelete = async (id: string) => {
     try {
@@ -36,7 +20,10 @@ export default function ProductsPage() {
         throw new Error("Delete failed");
       }
 
-      setProducts(products.filter((p) => p.id !== id));
+      await mutateProducts(
+        (current) => (current || []).filter((product) => product.id !== id),
+        { revalidate: false }
+      );
     } catch (error) {
       console.error("Delete error:", error);
       throw error;

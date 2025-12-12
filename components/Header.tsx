@@ -34,50 +34,53 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-purple-200/95 backdrop-blur-md shadow-lg border-b border-purple-300/50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <header className="sticky top-0 z-50 bg-gradient-to-r from-purple-200/98 via-pink-200/98 to-purple-200/98 backdrop-blur-xl shadow-2xl border-b-2 border-purple-300/60">
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-pink-400/10 to-purple-400/10"></div>
+      <div className="container mx-auto px-4 relative">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-purple-900 hover:text-purple-700 transition-colors drop-shadow-sm">
-            {process.env.NEXT_PUBLIC_APP_NAME || "magi.cofresin"}
+          <Link href="/" className="group relative text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent hover:from-purple-600 hover:via-pink-500 hover:to-purple-600 transition-all duration-300 drop-shadow-lg hover:scale-105 transform">
+            <span className="relative z-10">{process.env.NEXT_PUBLIC_APP_NAME || "magi.cofresin"}</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300"></span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-4">
             <Link
               href="/"
-              className="text-purple-800 hover:text-purple-900 transition-colors font-medium"
+              className="relative px-4 py-2 text-purple-800 hover:text-purple-900 transition-all duration-300 font-semibold rounded-lg hover:bg-white/50 backdrop-blur-sm group"
             >
-              Products
+              <span className="relative z-10">Products</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
             </Link>
             <Link
               href="/wishlist"
-              className="relative text-purple-800 hover:text-purple-900 transition-colors"
+              className="relative p-2.5 text-purple-800 hover:text-purple-900 transition-all duration-300 rounded-full hover:bg-white/50 backdrop-blur-sm group"
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="w-6 h-6 relative z-10 group-hover:scale-110 transition-transform duration-300" />
               {wishlistCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold shadow-md">
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-lg animate-pulse border-2 border-white">
                   {wishlistCount}
                 </span>
               )}
             </Link>
             <Link
               href="/cart"
-              className="relative text-purple-800 hover:text-purple-900 transition-colors"
+              className="relative p-2.5 text-purple-800 hover:text-purple-900 transition-all duration-300 rounded-full hover:bg-white/50 backdrop-blur-sm group"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingCart className="w-6 h-6 relative z-10 group-hover:scale-110 transition-transform duration-300" />
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold shadow-md">
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-lg animate-pulse border-2 border-white">
                   {cartCount}
                 </span>
               )}
             </Link>
             <Link
               href="/admin/login"
-              className="text-purple-800 hover:text-purple-900 transition-colors"
+              className="p-2.5 text-purple-800 hover:text-purple-900 transition-all duration-300 rounded-full hover:bg-white/50 backdrop-blur-sm group"
               title="Admin Panel"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
             </Link>
           </nav>
 
@@ -97,48 +100,48 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="md:hidden py-4 border-t border-purple-300/50">
-            <div className="flex flex-col gap-4">
+          <nav className="md:hidden py-6 border-t-2 border-purple-300/60 bg-white/30 backdrop-blur-md animate-in slide-in-from-top duration-300">
+            <div className="flex flex-col gap-3">
               <Link
                 href="/"
-                className="text-purple-800 hover:text-purple-900 transition-colors font-medium"
+                className="px-4 py-3 text-purple-800 hover:text-purple-900 hover:bg-white/50 rounded-lg transition-all duration-300 font-semibold"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Products
               </Link>
               <Link
                 href="/wishlist"
-                className="flex items-center gap-2 text-purple-800 hover:text-purple-900 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-purple-800 hover:text-purple-900 hover:bg-white/50 rounded-lg transition-all duration-300"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Heart className="w-5 h-5" />
-                Wishlist
+                <Heart className="w-6 h-6" />
+                <span className="font-semibold">Wishlist</span>
                 {wishlistCount > 0 && (
-                  <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs rounded-full px-2 py-0.5 font-semibold shadow-md">
+                  <span className="ml-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs rounded-full px-3 py-1 font-bold shadow-lg">
                     {wishlistCount}
                   </span>
                 )}
               </Link>
               <Link
                 href="/cart"
-                className="flex items-center gap-2 text-purple-800 hover:text-purple-900 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-purple-800 hover:text-purple-900 hover:bg-white/50 rounded-lg transition-all duration-300"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <ShoppingCart className="w-5 h-5" />
-                Cart
+                <ShoppingCart className="w-6 h-6" />
+                <span className="font-semibold">Cart</span>
                 {cartCount > 0 && (
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full px-2 py-0.5 font-semibold shadow-md">
+                  <span className="ml-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full px-3 py-1 font-bold shadow-lg">
                     {cartCount}
                   </span>
                 )}
               </Link>
               <Link
                 href="/admin/login"
-                className="flex items-center gap-2 text-purple-800 hover:text-purple-900 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-purple-800 hover:text-purple-900 hover:bg-white/50 rounded-lg transition-all duration-300"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Settings className="w-5 h-5" />
-                Admin
+                <Settings className="w-6 h-6" />
+                <span className="font-semibold">Admin</span>
               </Link>
             </div>
           </nav>

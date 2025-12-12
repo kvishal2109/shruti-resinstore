@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 interface PriceBulkEditorProps {
   products: Product[];
-  onUpdate: () => void;
+  onUpdate?: () => Promise<void> | void;
 }
 
 export default function PriceBulkEditor({
@@ -18,6 +18,7 @@ export default function PriceBulkEditor({
   const [updateType, setUpdateType] = useState<"percentage" | "fixed">("percentage");
   const [updateValue, setUpdateValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showProductList, setShowProductList] = useState(false);
 
   const handleSelectAll = () => {
     if (selectedProducts.size === products.length) {
@@ -85,7 +86,7 @@ export default function PriceBulkEditor({
       toast.success(`Updated ${updates.length} product(s)`);
       setSelectedProducts(new Set());
       setUpdateValue("");
-      onUpdate();
+      await onUpdate?.();
     } catch (error) {
       console.error("Update error:", error);
       toast.error("Failed to update prices");
@@ -102,18 +103,65 @@ export default function PriceBulkEditor({
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {selectedProducts.size === products.length ? "Deselect All" : "Select All"}
+            </button>
+            <span className="text-sm text-gray-600">
+              {selectedProducts.size} product(s) selected
+            </span>
+          </div>
           <button
             type="button"
-            onClick={handleSelectAll}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            onClick={() => setShowProductList(!showProductList)}
+            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            {selectedProducts.size === products.length ? "Deselect All" : "Select All"}
+            {showProductList ? "Hide" : "Show"} Product List
           </button>
-          <span className="text-sm text-gray-600">
-            {selectedProducts.size} product(s) selected
-          </span>
         </div>
+
+        {showProductList && (
+          <div className="max-h-96 overflow-y-auto space-y-2 border border-gray-200 rounded-lg p-4">
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className={`p-3 border rounded-lg ${
+                  selectedProducts.has(product.id)
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.has(product.id)}
+                    onChange={() => handleSelectProduct(product.id)}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{product.name}</div>
+                    <div className="text-sm text-gray-500">
+                      {product.category} {product.subcategory && `• ${product.subcategory}`}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-gray-900">₹{product.price.toFixed(2)}</div>
+                    {product.originalPrice && (
+                      <div className="text-sm text-gray-500 line-through">
+                        ₹{product.originalPrice.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

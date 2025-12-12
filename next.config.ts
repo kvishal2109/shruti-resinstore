@@ -5,14 +5,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "firebasestorage.googleapis.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.firebasestorage.googleapis.com",
-      },
-      {
-        protocol: "https",
         hostname: "images.unsplash.com",
       },
       {
@@ -51,8 +43,15 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "catalogue-cdn.quicksell.co",
       },
+      {
+        protocol: "https",
+        hostname: "**.public.blob.vercel-storage.com",
+      },
     ],
   },
+  // Note: Source map warnings in console are harmless and don't affect functionality
+  // They're just Next.js dev tools trying to parse source maps
+  // Turbopack (Next.js 16 default) doesn't support webpack configs
 };
 
 export default nextConfig;

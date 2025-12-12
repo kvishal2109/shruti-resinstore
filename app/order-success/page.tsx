@@ -91,12 +91,30 @@ function OrderSuccessContent() {
                 className={`font-semibold ${
                   order.paymentStatus === "paid"
                     ? "text-green-600"
-                    : "text-red-600"
+                    : order.paymentStatus === "pending_verification"
+                    ? "text-orange-600"
+                    : order.paymentStatus === "partial"
+                    ? "text-yellow-600"
+                    : "text-gray-600"
                 }`}
               >
-                {order.paymentStatus.toUpperCase()}
+                {order.paymentStatus.replace("_", " ").toUpperCase()}
               </span>
             </div>
+            {order.paymentStatus === "pending_verification" && (
+              <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800">
+                  Payment details submitted. We're verifying your payment and will confirm soon.
+                </p>
+              </div>
+            )}
+            {order.paymentStatus === "partial" && (
+              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  Partial payment received. Please contact us to complete the payment.
+                </p>
+              </div>
+            )}
             {order.discount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount {order.couponCode && `(${order.couponCode})`}:</span>

@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 interface InventoryEditorProps {
   products: Product[];
-  onUpdate: () => void;
+  onUpdate?: () => Promise<void> | void;
 }
 
 export default function InventoryEditor({
@@ -92,7 +92,7 @@ export default function InventoryEditor({
       toast.success(`Updated ${updates.length} product(s)`);
       setSelectedProducts(new Set());
       setStockUpdates({});
-      onUpdate();
+      await onUpdate?.();
     } catch (error) {
       console.error("Update error:", error);
       toast.error("Failed to update inventory");

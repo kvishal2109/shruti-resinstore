@@ -1,5 +1,5 @@
 // Hardcoded discount coupons
-// TODO: Move to Firebase when admin panel is ready
+// TODO: Move to Vercel Blob Storage when admin panel is ready
 
 export interface Coupon {
   code: string;

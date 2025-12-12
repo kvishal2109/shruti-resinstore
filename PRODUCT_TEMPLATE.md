@@ -73,10 +73,10 @@ Use this template when adding products to Firestore.
    - https://www.pexels.com/
    - Similar to Unsplash
 
-3. **Firebase Storage**
-   - Upload images to Firebase Storage
-   - Get download URL
-   - Use in product `image` field
+3. **Vercel Blob Storage**
+   - Upload images via admin panel
+   - Images are automatically stored in Vercel Blob
+   - URL is automatically generated
 
 ## Example Products
 

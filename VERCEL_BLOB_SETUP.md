@@ -72,12 +72,9 @@ store-data/
       └── ...
 ```
 
-## Migration from Firebase
+## Migration Notes
 
-If you had data in Firebase:
-1. Export your products from Firebase
-2. Use the admin panel to add products (they'll be saved to Vercel Blob)
-3. Old orders will remain in Firebase (new orders go to Vercel Blob)
+This application uses Vercel Blob Storage exclusively. All products and orders are stored in Vercel Blob.
 
 ## Limits
 

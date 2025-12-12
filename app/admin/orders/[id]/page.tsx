@@ -12,6 +12,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [receivedAmount, setReceivedAmount] = useState("");
 
   useEffect(() => {
     fetchOrder();
@@ -74,6 +76,39 @@ export default function OrderDetailPage() {
     "cancelled",
   ];
 
+  const handlePaymentVerification = async (paymentStatus: "paid" | "partial" | "failed") => {
+    if (!receivedAmount || isNaN(parseFloat(receivedAmount))) {
+      toast.error("Please enter a valid received amount");
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const response = await fetch("/api/admin/payment/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          verifiedAmount: parseFloat(receivedAmount),
+          paymentStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Verification failed");
+      }
+
+      await fetchOrder(); // Refresh order data
+      setReceivedAmount("");
+      toast.success("Payment verified successfully");
+    } catch (error) {
+      console.error("Verification error:", error);
+      toast.error("Failed to verify payment");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -86,6 +121,23 @@ export default function OrderDetailPage() {
         return "bg-green-100 text-green-800";
       case "cancelled":
         return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "bg-green-100 text-green-800";
+      case "pending_verification":
+        return "bg-orange-100 text-orange-800";
+      case "partial":
+        return "bg-yellow-100 text-yellow-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      case "pending":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -226,17 +278,93 @@ export default function OrderDetailPage() {
               <div>
                 <p className="text-sm text-gray-600 mb-2">Payment Status</p>
                 <span
-                  className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                    order.paymentStatus === "paid"
-                      ? "bg-green-100 text-green-800"
-                      : order.paymentStatus === "pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
+                  className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getPaymentStatusColor(
+                    order.paymentStatus
+                  )}`}
                 >
-                  {order.paymentStatus.toUpperCase()}
+                  {order.paymentStatus.replace("_", " ").toUpperCase()}
                 </span>
               </div>
+
+              {/* Payment Verification Section */}
+              {(order.paymentStatus === "pending_verification" || order.paymentStatus === "pending") && (
+                <div className="mt-4 p-4 bg-orange-50 border-2 border-orange-200 rounded-lg">
+                  <h3 className="font-semibold text-orange-900 mb-3">Payment Verification</h3>
+                  
+                  {order.utrNumber && (
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-700 mb-1">
+                        <span className="font-medium">UTR Number:</span> {order.utrNumber}
+                      </p>
+                      {order.paymentSubmittedAt && (
+                        <p className="text-xs text-gray-500">
+                          Submitted: {new Date(order.paymentSubmittedAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {order.paymentProofUrl && (
+                    <div className="mb-3">
+                      <a
+                        href={order.paymentProofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        View Payment Screenshot →
+                      </a>
+                    </div>
+                  )}
+
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      Expected Amount: ₹{order.totalAmount.toLocaleString()}
+                    </p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Received Amount (from bank statement):
+                    </label>
+                    <input
+                      type="number"
+                      value={receivedAmount}
+                      onChange={(e) => setReceivedAmount(e.target.value)}
+                      placeholder="Enter received amount"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handlePaymentVerification("paid")}
+                      disabled={verifying || !receivedAmount}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+                    >
+                      Mark as Paid
+                    </button>
+                    <button
+                      onClick={() => handlePaymentVerification("partial")}
+                      disabled={verifying || !receivedAmount}
+                      className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+                    >
+                      Partial Payment
+                    </button>
+                    <button
+                      onClick={() => handlePaymentVerification("failed")}
+                      disabled={verifying || !receivedAmount}
+                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+                    >
+                      Failed
+                    </button>
+                  </div>
+
+                  {order.verifiedAmount && (
+                    <p className="text-xs text-gray-600 mt-2">
+                      Verified Amount: ₹{order.verifiedAmount.toLocaleString()}
+                      {order.verifiedAt && ` on ${new Date(order.verifiedAt).toLocaleString()}`}
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Update Status

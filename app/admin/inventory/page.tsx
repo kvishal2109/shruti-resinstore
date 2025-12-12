@@ -1,30 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Product } from "@/types";
 import InventoryEditor from "@/components/admin/InventoryEditor";
-import toast from "react-hot-toast";
+import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 
 export default function InventoryPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch("/api/admin/products");
-      const data = await response.json();
-      setProducts(data.products || []);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    products,
+    loading,
+    mutate,
+  } = useAdminProducts();
 
   if (loading) {
     return (
@@ -41,7 +25,10 @@ export default function InventoryPage() {
         <p className="text-gray-600 mt-1">Update stock levels and availability</p>
       </div>
 
-      <InventoryEditor products={products} onUpdate={fetchProducts} />
+      <InventoryEditor
+        products={products}
+        onUpdate={() => mutate()}
+      />
     </div>
   );
 }

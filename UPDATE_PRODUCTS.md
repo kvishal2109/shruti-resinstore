@@ -73,10 +73,11 @@ export const hardcodedProducts: Product[] = [
 2. The app will automatically use the new products
 3. No need to restart - Next.js will hot-reload
 
-## Switching to Firebase Later
+## Using Admin Panel
 
-When you're ready to use Firebase:
-1. Add products to Firestore (see SETUP_GUIDE.md)
-2. The app will automatically switch to Firebase products
-3. Hardcoded products will be used as fallback if Firebase fails
+Products are now managed through the admin panel:
+1. Go to `/admin` and login
+2. Click "Add Product" to create new products
+3. Upload product images directly (stored in Vercel Blob)
+4. All products are automatically saved to Vercel Blob Storage
 

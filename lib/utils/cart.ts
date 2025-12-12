@@ -4,11 +4,13 @@ const CART_STORAGE_KEY = "ecommerce_cart";
 const WISHLIST_STORAGE_KEY = "ecommerce_wishlist";
 
 // Cart Utilities
+// Using sessionStorage instead of localStorage so each visitor starts fresh
+// Perfect for Instagram bio links - clears when tab closes, persists during session
 export function getCartFromStorage(): CartItem[] {
   if (typeof window === "undefined") return [];
   
   try {
-    const cartData = localStorage.getItem(CART_STORAGE_KEY);
+    const cartData = sessionStorage.getItem(CART_STORAGE_KEY);
     return cartData ? JSON.parse(cartData) : [];
   } catch (error) {
     console.error("Error reading cart from storage:", error);
@@ -20,7 +22,7 @@ export function saveCartToStorage(cart: CartItem[]): void {
   if (typeof window === "undefined") return;
   
   try {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   } catch (error) {
     console.error("Error saving cart to storage:", error);
   }
@@ -73,7 +75,7 @@ export function updateCartItemQuantity(
 
 export function clearCart(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(CART_STORAGE_KEY);
+  sessionStorage.removeItem(CART_STORAGE_KEY);
 }
 
 export function getCartTotal(cart: CartItem[]): number {
@@ -88,11 +90,13 @@ export function getCartItemCount(cart: CartItem[]): number {
 }
 
 // Wishlist Utilities
+// Using sessionStorage instead of localStorage so each visitor starts fresh
+// Perfect for Instagram bio links - clears when tab closes, persists during session
 export function getWishlistFromStorage(): string[] {
   if (typeof window === "undefined") return [];
   
   try {
-    const wishlistData = localStorage.getItem(WISHLIST_STORAGE_KEY);
+    const wishlistData = sessionStorage.getItem(WISHLIST_STORAGE_KEY);
     return wishlistData ? JSON.parse(wishlistData) : [];
   } catch (error) {
     console.error("Error reading wishlist from storage:", error);
@@ -104,7 +108,7 @@ export function saveWishlistToStorage(wishlist: string[]): void {
   if (typeof window === "undefined") return;
   
   try {
-    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlist));
+    sessionStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlist));
   } catch (error) {
     console.error("Error saving wishlist to storage:", error);
   }

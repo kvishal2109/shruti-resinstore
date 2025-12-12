@@ -6,6 +6,10 @@ const BLOB_STORE_PREFIX = "store-data";
 const PRODUCTS_BLOB_PATH = `${BLOB_STORE_PREFIX}/products.json`;
 // Orders storage  
 const ORDERS_BLOB_PATH = `${BLOB_STORE_PREFIX}/orders.json`;
+// Categories metadata storage
+const CATEGORIES_METADATA_BLOB_PATH = `${BLOB_STORE_PREFIX}/categories-metadata.json`;
+// Admin password storage
+const ADMIN_PASSWORD_BLOB_PATH = `${BLOB_STORE_PREFIX}/admin-password.json`;
 
 /**
  * Products Storage Functions
@@ -29,7 +33,9 @@ export async function getProductsBlob(): Promise<any[]> {
     });
     
     if (!response.ok) {
-      if (response.status === 404) {
+      // Handle 404 (not found) and 403 (forbidden) gracefully
+      if (response.status === 404 || response.status === 403) {
+        console.warn("Blob store unavailable (forbidden or not found), returning empty array");
         return [];
       }
       throw new Error(`Failed to fetch products: ${response.statusText}`);
@@ -38,8 +44,14 @@ export async function getProductsBlob(): Promise<any[]> {
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    // If error is about blob not found, return empty array
-    if (error.status === 404 || error.message?.includes("not found")) {
+    // If error is about blob not found, forbidden, or suspended, return empty array
+    if (error.status === 404 || 
+        error.status === 403 ||
+        error.message?.includes("not found") || 
+        error.message?.includes("suspended") ||
+        error.message?.includes("Forbidden") ||
+        error.message?.includes("forbidden")) {
+      console.warn("Blob store unavailable (suspended, forbidden, or not found), returning empty array");
       return [];
     }
     console.error("Error reading products from blob:", error);
@@ -53,8 +65,14 @@ export async function saveProductsBlob(products: any[]): Promise<void> {
     await put(PRODUCTS_BLOB_PATH, jsonData, {
       access: "public",
       contentType: "application/json",
+      allowOverwrite: true,
     });
-  } catch (error) {
+  } catch (error: any) {
+    // If blob store is suspended, log warning but don't throw
+    if (error.message?.includes("suspended")) {
+      console.warn("Blob store is suspended. Cannot save products. Changes will not persist.");
+      throw new Error("Vercel Blob store is suspended. Please contact support to restore access.");
+    }
     console.error("Error saving products to blob:", error);
     throw error;
   }
@@ -82,7 +100,9 @@ export async function getOrdersBlob(): Promise<any[]> {
     });
     
     if (!response.ok) {
-      if (response.status === 404) {
+      // Handle 404 (not found) and 403 (forbidden) gracefully
+      if (response.status === 404 || response.status === 403) {
+        console.warn("Blob store unavailable (forbidden or not found), returning empty array");
         return [];
       }
       throw new Error(`Failed to fetch orders: ${response.statusText}`);
@@ -91,8 +111,14 @@ export async function getOrdersBlob(): Promise<any[]> {
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    // If error is about blob not found, return empty array
-    if (error.status === 404 || error.message?.includes("not found")) {
+    // If error is about blob not found, forbidden, or suspended, return empty array
+    if (error.status === 404 || 
+        error.status === 403 ||
+        error.message?.includes("not found") || 
+        error.message?.includes("suspended") ||
+        error.message?.includes("Forbidden") ||
+        error.message?.includes("forbidden")) {
+      console.warn("Blob store unavailable (suspended, forbidden, or not found), returning empty array");
       return [];
     }
     console.error("Error reading orders from blob:", error);
@@ -106,8 +132,14 @@ export async function saveOrdersBlob(orders: any[]): Promise<void> {
     await put(ORDERS_BLOB_PATH, jsonData, {
       access: "public",
       contentType: "application/json",
+      allowOverwrite: true,
     });
-  } catch (error) {
+  } catch (error: any) {
+    // If blob store is suspended, log warning but don't throw
+    if (error.message?.includes("suspended")) {
+      console.warn("Blob store is suspended. Cannot save orders. Changes will not persist.");
+      throw new Error("Vercel Blob store is suspended. Please contact support to restore access.");
+    }
     console.error("Error saving orders to blob:", error);
     throw error;
   }
@@ -171,6 +203,172 @@ export async function listImagesBlob(folder: string = "products"): Promise<strin
   } catch (error) {
     console.error("Error listing images:", error);
     return [];
+  }
+}
+
+/**
+ * Categories Metadata Storage Functions
+ */
+interface CategoryMetadata {
+  name: string;
+  image?: string;
+}
+
+interface SubcategoryMetadata {
+  categoryName: string;
+  subcategoryName: string;
+  image?: string;
+}
+
+export interface CategoriesMetadata {
+  categories: Record<string, CategoryMetadata>;
+  subcategories: Record<string, SubcategoryMetadata>;
+}
+
+export async function getCategoriesMetadata(): Promise<CategoriesMetadata> {
+  try {
+    const { blobs } = await list({ prefix: CATEGORIES_METADATA_BLOB_PATH });
+    
+    if (blobs.length === 0) {
+      return { categories: {}, subcategories: {} };
+    }
+    
+    const blob = blobs[0];
+    const response = await fetch(blob.url, { cache: "no-store" });
+    
+    if (!response.ok) {
+      // Handle 404 (not found) and 403 (forbidden) gracefully
+      if (response.status === 404 || response.status === 403) {
+        console.warn("Blob store unavailable (forbidden or not found), returning empty metadata");
+        return { categories: {}, subcategories: {} };
+      }
+      throw new Error(`Failed to fetch categories metadata: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data || { categories: {}, subcategories: {} };
+  } catch (error: any) {
+    if (error.status === 404 || 
+        error.status === 403 ||
+        error.message?.includes("not found") || 
+        error.message?.includes("suspended") ||
+        error.message?.includes("Forbidden") ||
+        error.message?.includes("forbidden")) {
+      console.warn("Blob store unavailable (suspended, forbidden, or not found), returning empty metadata");
+      return { categories: {}, subcategories: {} };
+    }
+    console.error("Error reading categories metadata from blob:", error);
+    return { categories: {}, subcategories: {} };
+  }
+}
+
+export async function saveCategoriesMetadata(metadata: CategoriesMetadata): Promise<void> {
+  try {
+    const jsonData = JSON.stringify(metadata, null, 2);
+    await put(CATEGORIES_METADATA_BLOB_PATH, jsonData, {
+      access: "public",
+      contentType: "application/json",
+      allowOverwrite: true,
+    });
+  } catch (error: any) {
+    // If blob store is suspended, log warning but don't throw
+    if (error.message?.includes("suspended")) {
+      console.warn("Blob store is suspended. Cannot save categories metadata. Changes will not persist.");
+      throw new Error("Vercel Blob store is suspended. Please contact support to restore access.");
+    }
+    console.error("Error saving categories metadata to blob:", error);
+    throw error;
+  }
+}
+
+export async function updateCategoryImage(categoryName: string, imageUrl: string | null): Promise<void> {
+  const metadata = await getCategoriesMetadata();
+  
+  if (imageUrl) {
+    metadata.categories[categoryName] = {
+      name: categoryName,
+      image: imageUrl,
+    };
+  } else {
+    delete metadata.categories[categoryName];
+  }
+  
+  await saveCategoriesMetadata(metadata);
+}
+
+export async function updateSubcategoryImage(
+  categoryName: string,
+  subcategoryName: string,
+  imageUrl: string | null
+): Promise<void> {
+  const metadata = await getCategoriesMetadata();
+  const key = `${categoryName}::${subcategoryName}`;
+  
+  if (imageUrl) {
+    metadata.subcategories[key] = {
+      categoryName,
+      subcategoryName,
+      image: imageUrl,
+    };
+  } else {
+    delete metadata.subcategories[key];
+  }
+  
+  await saveCategoriesMetadata(metadata);
+}
+
+/**
+ * Admin Password Storage Functions
+ */
+export async function getAdminPassword(): Promise<string | null> {
+  try {
+    const { blobs } = await list({ prefix: ADMIN_PASSWORD_BLOB_PATH });
+    
+    if (blobs.length === 0) {
+      return null;
+    }
+    
+    const blob = blobs[0];
+    const response = await fetch(blob.url, { cache: "no-store" });
+    
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 403) {
+        return null;
+      }
+      throw new Error(`Failed to fetch admin password: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data?.password || null;
+  } catch (error: any) {
+    if (error.status === 404 || 
+        error.status === 403 ||
+        error.message?.includes("not found") ||
+        error.message?.includes("suspended") ||
+        error.message?.includes("Forbidden") ||
+        error.message?.includes("forbidden")) {
+      return null;
+    }
+    console.error("Error reading admin password from blob:", error);
+    return null;
+  }
+}
+
+export async function saveAdminPassword(password: string): Promise<void> {
+  try {
+    const jsonData = JSON.stringify({ password, updatedAt: new Date().toISOString() }, null, 2);
+    await put(ADMIN_PASSWORD_BLOB_PATH, jsonData, {
+      access: "public",
+      contentType: "application/json",
+      allowOverwrite: true,
+    });
+  } catch (error: any) {
+    if (error.message?.includes("suspended")) {
+      console.warn("Blob store is suspended. Cannot save admin password. Changes will not persist.");
+      throw new Error("Vercel Blob store is suspended. Please contact support to restore access.");
+    }
+    console.error("Error saving admin password to blob:", error);
+    throw error;
   }
 }
 

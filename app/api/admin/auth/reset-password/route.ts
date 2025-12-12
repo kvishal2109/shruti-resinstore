@@ -1,0 +1,126 @@
+import { NextRequest, NextResponse } from "next/server";
+import { verifyOTP } from "@/lib/admin/otp";
+import { resetPassword } from "@/lib/admin/auth";
+
+const ADMIN_PHONE = process.env.ADMIN_PHONE || "+917355413604";
+
+// Normalize phone number to standard format
+function normalizePhoneNumber(phone: string): string {
+  if (!phone) return "";
+  
+  // Remove all non-digit characters except +
+  let cleaned = phone.replace(/[^\d+]/g, "");
+  
+  // If it starts with +, keep it
+  if (cleaned.startsWith("+")) {
+    return cleaned;
+  }
+  
+  // If it's 10 digits and starts with 7, 8, or 9, assume it's Indian and add +91
+  if (cleaned.length === 10 && /^[789]/.test(cleaned)) {
+    return `+91${cleaned}`;
+  }
+  
+  // If it's 12 digits and starts with 91, add +
+  if (cleaned.length === 12 && cleaned.startsWith("91")) {
+    return `+${cleaned}`;
+  }
+  
+  // Otherwise return as is
+  return cleaned.startsWith("+") ? cleaned : `+${cleaned}`;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { phone, otp, newPassword } = await request.json();
+    
+    // Validate inputs
+    if (!phone || !otp || !newPassword) {
+      return NextResponse.json(
+        { error: "Phone number, OTP, and new password are required" },
+        { status: 400 }
+      );
+    }
+    
+    // Normalize phone numbers for comparison
+    const normalizedPhone = normalizePhoneNumber(phone);
+    const normalizedAdminPhone = normalizePhoneNumber(ADMIN_PHONE);
+    
+    // Validate phone number
+    if (normalizedPhone !== normalizedAdminPhone) {
+      return NextResponse.json(
+        { error: "Phone number not authorized" },
+        { status: 403 }
+      );
+    }
+    
+    // Validate new password
+    if (newPassword.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters long" },
+        { status: 400 }
+      );
+    }
+    
+    // Verify OTP (use normalized phone for lookup)
+    console.log("Attempting OTP verification:", {
+      normalizedPhone,
+      otpLength: otp?.length,
+      otpProvided: otp,
+    });
+    
+    const isValidOTP = verifyOTP(normalizedPhone, otp);
+    if (!isValidOTP) {
+      console.error("OTP verification failed", {
+        phone: normalizedPhone,
+        otpLength: otp?.length,
+        otpProvided: otp,
+        note: "OTP might be expired, incorrect, or phone number mismatch",
+      });
+      return NextResponse.json(
+        { error: "Invalid or expired OTP. Please request a new OTP." },
+        { status: 401 }
+      );
+    }
+    
+    console.log("OTP verified successfully for", normalizedPhone);
+    
+    // Reset password
+    try {
+      await resetPassword(newPassword);
+      console.log("Password reset successfully for", normalizedPhone);
+    } catch (passwordError: any) {
+      console.error("Error saving password:", passwordError);
+      throw passwordError; // Re-throw to be caught by outer catch
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (error: any) {
+    console.error("Reset password error:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      phone: phone,
+      normalizedPhone: normalizePhoneNumber(phone || ""),
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to reset password. Please try again later.";
+    if (error?.message?.includes("suspended")) {
+      errorMessage = "Storage service is unavailable. Please contact support.";
+    } else if (error?.message?.includes("blob")) {
+      errorMessage = "Failed to save password. Please try again.";
+    }
+    
+    return NextResponse.json(
+      {
+        error: errorMessage,
+      },
+      { status: 500 }
+    );
+  }
+}
+

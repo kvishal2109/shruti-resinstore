@@ -213,3 +213,57 @@ export async function sendOrderNotificationToOwner(
   }
 }
 
+// Send admin password reset email
+export async function sendAdminPasswordReset(
+  adminEmail: string,
+  password: string
+): Promise<void> {
+  try {
+    const resend = getResendInstance();
+    await resend.emails.send({
+      from: process.env.OWNER_EMAIL || "onboarding@resend.dev",
+      to: adminEmail,
+      subject: "Admin Password Recovery - magi.cofresin",
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Admin Password Recovery</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0;">Password Recovery</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <p>Hello Admin,</p>
+              <p>You have requested to recover your admin panel password.</p>
+              
+              <div style="background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea;">
+                <h2 style="margin-top: 0; color: #667eea;">Your Admin Password</h2>
+                <p style="font-size: 18px; font-weight: bold; color: #333; background: #f5f5f5; padding: 15px; border-radius: 5px; text-align: center; letter-spacing: 2px;">
+                  ${password}
+                </p>
+              </div>
+              
+              <p style="color: #666; font-size: 14px;">
+                <strong>Security Note:</strong> Please keep this password secure and do not share it with anyone. 
+                If you did not request this password recovery, please contact the system administrator immediately.
+              </p>
+              
+              <p style="margin-top: 30px;">
+                Best regards,<br>
+                <strong>${process.env.NEXT_PUBLIC_APP_NAME || "magi.cofresin"} Admin System</strong>
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+    });
+  } catch (error) {
+    console.error("Error sending admin password reset email:", error);
+    throw error;
+  }
+}
+

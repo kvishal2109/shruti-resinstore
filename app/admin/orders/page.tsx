@@ -1,30 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Order } from "@/types";
 import OrderTable from "@/components/admin/OrderTable";
-import toast from "react-hot-toast";
+import { useAdminOrders } from "@/lib/hooks/useAdminOrders";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch("/api/admin/orders");
-      const data = await response.json();
-      setOrders(data.orders || []);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      toast.error("Failed to load orders");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { orders, loading } = useAdminOrders();
 
   if (loading) {
     return (

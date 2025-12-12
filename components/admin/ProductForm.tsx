@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Product } from "@/types";
 import ImageUpload from "./ImageUpload";
+import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
+import toast from "react-hot-toast";
 
 interface ProductFormProps {
   product?: Product;
@@ -16,6 +18,7 @@ export default function ProductForm({
   onCancel,
 }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
+  const { products } = useAdminProducts();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -28,9 +31,38 @@ export default function ProductForm({
     subcategory: "",
     inStock: true,
     stock: "",
-    catalogId: "",
-    catalogName: "",
   });
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [showCustomSubcategory, setShowCustomSubcategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState("");
+  const [customSubcategoryInput, setCustomSubcategoryInput] = useState("");
+
+  // Extract unique categories
+  const categories = useMemo(() => {
+    const unique = Array.from(new Set(products.map((p) => p.category).filter(Boolean)));
+    // If editing and current category is not in list, add it
+    if (product?.category && !unique.includes(product.category)) {
+      unique.push(product.category);
+    }
+    const preferredOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
+    const ordered = preferredOrder.filter((cat) => unique.includes(cat));
+    const remaining = unique.filter((cat) => !preferredOrder.includes(cat));
+    return [...ordered, ...remaining];
+  }, [products, product]);
+
+  // Extract subcategories for selected category
+  const subcategories = useMemo(() => {
+    if (!formData.category) return [];
+    const categoryProducts = products.filter((p) => p.category === formData.category);
+    const unique = Array.from(
+      new Set(categoryProducts.map((p) => p.subcategory).filter(Boolean))
+    );
+    // If editing and current subcategory is not in list, add it
+    if (product?.subcategory && product.category === formData.category && !unique.includes(product.subcategory)) {
+      unique.push(product.subcategory);
+    }
+    return unique.sort();
+  }, [products, formData.category, product]);
 
   useEffect(() => {
     if (product) {
@@ -46,19 +78,96 @@ export default function ProductForm({
         subcategory: product.subcategory || "",
         inStock: product.inStock ?? true,
         stock: product.stock?.toString() || "",
-        catalogId: product.catalogId || "",
-        catalogName: product.catalogName || "",
       });
     }
   }, [product]);
+
+  // Reset subcategory when category changes
+  useEffect(() => {
+    if (formData.category && !product) {
+      setFormData((prev) => ({ ...prev, subcategory: "" }));
+      setShowCustomSubcategory(false);
+      setCustomSubcategoryInput("");
+    }
+  }, [formData.category, product]);
+
+  const formatNumber = (value: number) => {
+    if (!Number.isFinite(value)) return "";
+    const rounded = Math.round(value * 100) / 100;
+    return rounded.toString();
+  };
+
+  const handlePriceFieldChange = (
+    field: "price" | "originalPrice" | "discount",
+    value: string
+  ) => {
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      const price = parseFloat(updated.price);
+      const original = parseFloat(updated.originalPrice);
+      const discount = parseFloat(updated.discount);
+
+      const hasPrice = !Number.isNaN(price);
+      const hasOriginal = !Number.isNaN(original);
+      const hasDiscount = !Number.isNaN(discount);
+
+      if (field !== "discount" && hasPrice && hasOriginal && original > 0) {
+        const calculatedDiscount = ((original - price) / original) * 100;
+        updated.discount = formatNumber(calculatedDiscount);
+      } else if (field !== "originalPrice" && hasPrice && hasDiscount && discount < 100) {
+        const calculatedOriginal = price / (1 - discount / 100);
+        updated.originalPrice = formatNumber(calculatedOriginal);
+      } else if (field !== "price" && hasOriginal && hasDiscount) {
+        const calculatedPrice = original * (1 - discount / 100);
+        updated.price = formatNumber(calculatedPrice);
+      }
+
+      return updated;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Validate category - check for duplicates (case-insensitive)
+      const trimmedCategory = formData.category.trim();
+      if (trimmedCategory) {
+        const categoryExists = categories.some(
+          (cat) => cat.toLowerCase() === trimmedCategory.toLowerCase()
+        );
+        if (categoryExists && !product) {
+          toast.error("Category already exists. Please select from the dropdown.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Validate subcategory - check for duplicates within the same category (case-insensitive)
+      const trimmedSubcategory = formData.subcategory.trim();
+      if (trimmedSubcategory && trimmedCategory) {
+        const categoryProducts = products.filter(
+          (p) => p.category.toLowerCase() === trimmedCategory.toLowerCase()
+        );
+        const existingSubcategories = Array.from(
+          new Set(categoryProducts.map((p) => p.subcategory).filter(Boolean))
+        );
+        const subcategoryExists = existingSubcategories.some(
+          (sub) => sub.toLowerCase() === trimmedSubcategory.toLowerCase()
+        );
+        if (subcategoryExists && (!product || product.subcategory?.toLowerCase() !== trimmedSubcategory.toLowerCase())) {
+          toast.error("Subcategory already exists in this category. Please select from the dropdown.");
+          setLoading(false);
+          return;
+        }
+      }
+
       const submitData = {
         ...formData,
+        category: trimmedCategory,
+        subcategory: trimmedSubcategory || undefined,
         price: Number(formData.price),
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         discount: formData.discount ? Number(formData.discount) : undefined,
@@ -95,25 +204,117 @@ export default function ProductForm({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Category *
           </label>
-          <input
-            type="text"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
+          <div className="space-y-2">
+            {!showCustomCategory ? (
+              <select
+                value={formData.category}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "__custom__") {
+                    setShowCustomCategory(true);
+                    setCustomCategoryInput("");
+                    setFormData({ ...formData, category: "" });
+                  } else {
+                    setFormData({ ...formData, category: value });
+                  }
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+                <option value="__custom__">+ Add New Category</option>
+              </select>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customCategoryInput}
+                  onChange={(e) => {
+                    setCustomCategoryInput(e.target.value);
+                    setFormData({ ...formData, category: e.target.value });
+                  }}
+                  placeholder="Enter new category name"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomCategory(false);
+                    setCustomCategoryInput("");
+                    setFormData({ ...formData, category: "" });
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Subcategory
           </label>
-          <input
-            type="text"
-            value={formData.subcategory}
-            onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <div className="space-y-2">
+            {!showCustomSubcategory ? (
+              <select
+                value={formData.subcategory || ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "__custom__") {
+                    setShowCustomSubcategory(true);
+                    setCustomSubcategoryInput("");
+                    setFormData({ ...formData, subcategory: "" });
+                  } else {
+                    setFormData({ ...formData, subcategory: value || "" });
+                  }
+                }}
+                disabled={!formData.category}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">No subcategory</option>
+                {subcategories.map((subcat) => (
+                  <option key={subcat} value={subcat}>
+                    {subcat}
+                  </option>
+                ))}
+                {formData.category && <option value="__custom__">+ Add New Subcategory</option>}
+              </select>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customSubcategoryInput}
+                  onChange={(e) => {
+                    setCustomSubcategoryInput(e.target.value);
+                    setFormData({ ...formData, subcategory: e.target.value });
+                  }}
+                  placeholder="Enter new subcategory name"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomSubcategory(false);
+                    setCustomSubcategoryInput("");
+                    setFormData({ ...formData, subcategory: "" });
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
@@ -124,7 +325,7 @@ export default function ProductForm({
             type="number"
             step="0.01"
             value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+            onChange={(e) => handlePriceFieldChange("price", e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -138,7 +339,7 @@ export default function ProductForm({
             type="number"
             step="0.01"
             value={formData.originalPrice}
-            onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+            onChange={(e) => handlePriceFieldChange("originalPrice", e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -151,7 +352,7 @@ export default function ProductForm({
             type="number"
             step="0.01"
             value={formData.discount}
-            onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+            onChange={(e) => handlePriceFieldChange("discount", e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -207,32 +408,6 @@ export default function ProductForm({
           multiple
           maxImages={10}
         />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Catalog ID
-          </label>
-          <input
-            type="text"
-            value={formData.catalogId}
-            onChange={(e) => setFormData({ ...formData, catalogId: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Catalog Name
-          </label>
-          <input
-            type="text"
-            value={formData.catalogName}
-            onChange={(e) => setFormData({ ...formData, catalogName: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
       </div>
 
       <div className="flex justify-end space-x-4">

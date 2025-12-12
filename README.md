@@ -1,14 +1,15 @@
 # E-Commerce Store
 
-A modern, full-stack e-commerce application built with Next.js 14, Firebase, and Razorpay. Features include product catalog, shopping cart, wishlist, UPI payments, and email notifications.
+A modern, full-stack e-commerce application built with Next.js 14, Vercel Blob Storage, and static QR code payments. Features include product catalog, shopping cart, wishlist, UPI payments via static QR code, and email notifications.
 
 ## Features
 
 - 🛍️ **Product Catalog** - Browse products with categories and search
 - 🛒 **Shopping Cart** - Add/remove items, update quantities
 - ❤️ **Wishlist** - Save favorite products
-- 💳 **UPI Payment** - Secure payment via Razorpay with QR code support
+- 💳 **UPI Payment** - Static QR code payment with manual verification
 - 📧 **Email Notifications** - Order confirmations to customer and owner
+- 📱 **SMS OTP** - Phone-based OTP for admin password reset
 - 📱 **Responsive Design** - Works seamlessly on mobile and desktop
 - 🚀 **Zero Cost Deployment** - Free hosting on Vercel
 
@@ -16,17 +17,17 @@ A modern, full-stack e-commerce application built with Next.js 14, Firebase, and
 
 - **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
-- **Database**: Firebase Firestore
-- **Storage**: Firebase Storage (for product images)
-- **Payment**: Razorpay
+- **Storage**: Vercel Blob Storage (for products, orders, and images)
+- **Payment**: Static QR Code (UPI)
 - **Email**: Resend
+- **SMS**: Twilio (for admin password reset)
 - **Hosting**: Vercel (free tier)
 
 ## Prerequisites
 
 - Node.js 18+ and npm
-- Firebase account (free tier)
-- Razorpay account (free setup)
+- Vercel account (free tier)
+- UPI ID and QR code image (for static payment)
 - Resend account (free tier)
 
 ## Setup Instructions
@@ -37,21 +38,19 @@ A modern, full-stack e-commerce application built with Next.js 14, Firebase, and
 npm install
 ```
 
-### 2. Firebase Setup
+### 2. Vercel Blob Storage Setup
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project
-3. Enable Firestore Database (start in test mode)
-4. Enable Firebase Storage
-5. Go to Project Settings > General > Your apps
-6. Add a web app and copy the configuration
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Go to **Storage** → **Create Database** → Select **Blob**
+3. Choose a region (e.g., `bom1` for India, `iad1` for US)
+4. Copy the `BLOB_READ_WRITE_TOKEN`
 
-### 3. Razorpay Setup
+### 3. Payment Setup (Static QR Code)
 
-1. Go to [Razorpay Dashboard](https://dashboard.razorpay.com/)
-2. Create an account (free)
-3. Get your Key ID and Key Secret from Settings > API Keys
-4. Enable UPI payment method
+1. Generate a static UPI QR code from your bank or UPI app
+2. Upload the QR code image to `public/QR/QR.jpg`
+3. Set your UPI ID (currently hardcoded as `shrutikumari21370@okaxis` in payment page)
+4. The QR code will be displayed on the payment page for customers to scan
 
 ### 4. Resend Setup
 
@@ -60,59 +59,61 @@ npm install
 3. Create an API key
 4. Verify your domain (or use their test domain)
 
-### 5. Environment Variables
+### 5. Twilio SMS Setup (for Admin Password Reset)
+
+1. Go to [Twilio](https://www.twilio.com/)
+2. Sign up for a free account (includes trial credits)
+3. Get your Account SID and Auth Token from the dashboard
+4. Get a phone number (Twilio provides a trial number, or purchase one)
+5. Add the credentials to your environment variables
+
+**Note:** In development mode, if Twilio is not configured, OTPs will be logged to the console instead of being sent via SMS.
+
+### 6. Environment Variables
 
 Create a `.env.local` file in the root directory:
 
 ```env
-# Firebase Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-
-# Razorpay Configuration
-NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+# Vercel Blob Storage
+BLOB_READ_WRITE_TOKEN=vercel_blob_xxxxxxxxxxxxx
 
 # Resend Email Configuration
 RESEND_API_KEY=your_resend_api_key
 OWNER_EMAIL=owner@example.com
+
+# Twilio SMS Configuration (for Admin Password Reset)
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=+1234567890
+
+# Admin Configuration
+ADMIN_PHONE=+917209732310
+ADMIN_PASSWORD=your_admin_password
 
 # App Configuration
 NEXT_PUBLIC_APP_NAME=Your Store Name
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### 6. Firebase Firestore Setup
+### 7. Admin Panel Setup (Vercel Blob)
 
-Create the following collections in Firestore:
+No Firebase or Firestore is required. The entire admin experience reads and writes
+directly to Vercel Blob storage. To get it running:
 
-#### Products Collection
-Structure:
-```json
-{
-  "name": "string",
-  "description": "string",
-  "price": number,
-  "originalPrice": number (optional),
-  "discount": number (optional),
-  "image": "string (URL)",
-  "images": ["string"] (optional),
-  "category": "string",
-  "inStock": boolean,
-  "stock": number (optional),
-  "createdAt": timestamp,
-  "updatedAt": timestamp
-}
-```
+1. Follow `VERCEL_BLOB_SETUP.md` to provision a Blob store and add
+   `BLOB_READ_WRITE_TOKEN` to `.env.local` (and Vercel env vars when deploying).
+2. (Optional) Override the default admin password (`admin123`) by setting
+   `ADMIN_PASSWORD` in `.env.local`.
+3. Start the dev server and visit `/admin`. Log in with the password above to
+   add products, upload images, manage inventory, and edit orders—everything is
+   persisted to `store-data/products.json`, `store-data/orders.json`, and the
+   `store-data/products/` image folder in Blob storage.
 
-#### Orders Collection
-Will be created automatically when orders are placed.
+If the blob files do not exist yet, the admin APIs will create them automatically
+the first time you save data. Hardcoded demo products are served as a fallback
+until your own data is written.
 
-### 7. Run Development Server
+### 8. Run Development Server
 
 ```bash
 npm run dev
@@ -152,9 +153,9 @@ After deployment, update `NEXT_PUBLIC_APP_URL` in Vercel environment variables t
 │   ├── ProductCard.tsx
 │   └── LoadingSpinner.tsx
 ├── lib/
-│   ├── firebase/        # Firebase utilities
-│   ├── razorpay/        # Razorpay integration
+│   ├── blob/            # Vercel Blob storage utilities
 │   ├── email/           # Email service
+│   ├── admin/           # Admin authentication
 │   └── utils/           # Helper functions
 ├── types/               # TypeScript types
 └── public/              # Static assets
@@ -162,14 +163,13 @@ After deployment, update `NEXT_PUBLIC_APP_URL` in Vercel environment variables t
 
 ## Adding Products
 
-Currently, products need to be added manually to Firebase Firestore. In the future, an admin panel will be added for easy product management.
+Products are managed through the admin panel:
 
-To add a product:
-1. Go to Firebase Console > Firestore
-2. Click on "products" collection
-3. Click "Add document"
-4. Fill in the required fields
-5. Upload product images to Firebase Storage and use the download URL
+1. Start the development server: `npm run dev`
+2. Go to `/admin` and login (password: `admin123`)
+3. Click "Add Product" to create new products
+4. Upload product images directly from the admin panel (stored in Vercel Blob)
+5. All products are automatically saved to Vercel Blob Storage
 
 ## Features in Detail
 
@@ -191,10 +191,10 @@ To add a product:
 - Secure payment processing
 
 ### Payment
-- Razorpay integration
-- UPI QR code support
-- Payment verification
-- Automatic order confirmation
+- Static QR code payment
+- UPI payment support
+- Manual payment verification
+- Order confirmation after verification
 
 ### Email Notifications
 - Customer receives order confirmation
@@ -205,9 +205,8 @@ To add a product:
 
 All services used are on free tiers:
 - **Vercel**: Free (hobby plan)
-- **Firebase Firestore**: Free (50K reads/day)
-- **Firebase Storage**: Free (5GB)
-- **Razorpay**: Free setup (2% transaction fee only)
+- **Vercel Blob Storage**: Free (1GB storage)
+- **Payment**: Static QR code (no transaction fees)
 - **Resend**: Free (3,000 emails/month)
 
 ## Support

@@ -61,10 +61,16 @@ export interface Order {
   discount: number;
   couponCode?: string;
   totalAmount: number;
-  paymentStatus: "pending" | "paid" | "failed";
+  paymentStatus: "pending" | "pending_verification" | "paid" | "partial" | "failed";
   orderStatus: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
   paymentId?: string;
-  razorpayOrderId?: string;
+  // Static QR payment fields
+  utrNumber?: string;
+  paymentProofUrl?: string;
+  paymentSubmittedAt?: Date;
+  verifiedAmount?: number; // Amount owner received
+  verifiedAt?: Date;
+  verifiedBy?: string; // Admin who verified
   createdAt: Date;
   updatedAt: Date;
 }

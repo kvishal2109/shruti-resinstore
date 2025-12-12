@@ -74,11 +74,36 @@ export async function getProductsByCatalog(catalogId: string): Promise<Product[]
 export async function getAllCategories(): Promise<string[]> {
   try {
     const products = await getAllProducts();
+    
+    // Ensure we have products (fallback to hardcoded if needed)
+    if (!products || products.length === 0) {
+      const categories = [...new Set(hardcodedProducts.map((p) => p.category))];
+      const categoryOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
+      const orderedCategories = categoryOrder.filter(cat => categories.includes(cat));
+      const remainingCategories = categories.filter(cat => !categoryOrder.includes(cat));
+      return [...orderedCategories, ...remainingCategories];
+    }
+    
     const categories = [...new Set(products.map((p) => p.category))];
-    return categories.sort();
+    
+    // Define the desired order
+    const categoryOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
+    
+    // Sort categories according to the desired order
+    const orderedCategories = categoryOrder.filter(cat => categories.includes(cat));
+    
+    // Add any categories not in the predefined order (shouldn't happen, but just in case)
+    const remainingCategories = categories.filter(cat => !categoryOrder.includes(cat));
+    
+    return [...orderedCategories, ...remainingCategories];
   } catch (error) {
-    console.error("Error fetching categories:", error);
-    return [];
+    console.error("Error fetching categories, using hardcoded:", error);
+    // Fallback to hardcoded products categories
+    const categories = [...new Set(hardcodedProducts.map((p) => p.category))];
+    const categoryOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
+    const orderedCategories = categoryOrder.filter(cat => categories.includes(cat));
+    const remainingCategories = categories.filter(cat => !categoryOrder.includes(cat));
+    return [...orderedCategories, ...remainingCategories];
   }
 }
 
@@ -89,7 +114,17 @@ export async function createProduct(
   productData: Omit<Product, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
   try {
-    const products = await getProductsBlob();
+    let products = await getProductsBlob();
+    
+    // If blob is empty, initialize with hardcoded products
+    if (products.length === 0) {
+      products = hardcodedProducts.map(p => ({
+        ...p,
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : new Date().toISOString(),
+      }));
+    }
+    
     const newProduct: Product = {
       ...productData,
       id: `prod-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -115,7 +150,19 @@ export async function updateProduct(
   updates: Partial<Omit<Product, "id" | "createdAt">>
 ): Promise<void> {
   try {
-    const products = await getProductsBlob();
+    let products = await getProductsBlob();
+    
+    // If blob is empty, initialize with hardcoded products
+    if (products.length === 0) {
+      products = hardcodedProducts.map(p => ({
+        ...p,
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : new Date().toISOString(),
+      }));
+      // Save hardcoded products to blob
+      await saveProductsBlob(products);
+    }
+    
     const index = products.findIndex((p: any) => p.id === productId);
     
     if (index === -1) {
@@ -125,7 +172,7 @@ export async function updateProduct(
     products[index] = {
       ...products[index],
       ...updates,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     };
     
     await saveProductsBlob(products);
@@ -140,7 +187,17 @@ export async function updateProduct(
  */
 export async function deleteProduct(productId: string): Promise<void> {
   try {
-    const products = await getProductsBlob();
+    let products = await getProductsBlob();
+    
+    // If blob is empty, initialize with hardcoded products
+    if (products.length === 0) {
+      products = hardcodedProducts.map(p => ({
+        ...p,
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : new Date().toISOString(),
+      }));
+    }
+    
     const filtered = products.filter((p: any) => p.id !== productId);
     
     if (filtered.length === products.length) {
@@ -161,7 +218,16 @@ export async function bulkUpdatePrices(
   updates: Array<{ productId: string; price: number; originalPrice?: number; discount?: number }>
 ): Promise<void> {
   try {
-    const products = await getProductsBlob();
+    let products = await getProductsBlob();
+    
+    // If blob is empty, initialize with hardcoded products
+    if (products.length === 0) {
+      products = hardcodedProducts.map(p => ({
+        ...p,
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : new Date().toISOString(),
+      }));
+    }
     
     updates.forEach(({ productId, price, originalPrice, discount }) => {
       const product = products.find((p: any) => p.id === productId);
@@ -169,7 +235,7 @@ export async function bulkUpdatePrices(
         product.price = price;
         if (originalPrice !== undefined) product.originalPrice = originalPrice;
         if (discount !== undefined) product.discount = discount;
-        product.updatedAt = new Date();
+        product.updatedAt = new Date().toISOString();
       }
     });
     
@@ -187,20 +253,96 @@ export async function bulkUpdateInventory(
   updates: Array<{ productId: string; stock?: number; inStock: boolean }>
 ): Promise<void> {
   try {
-    const products = await getProductsBlob();
+    let products = await getProductsBlob();
+    
+    // If blob is empty, initialize with hardcoded products
+    if (products.length === 0) {
+      products = hardcodedProducts.map(p => ({
+        ...p,
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : new Date().toISOString(),
+      }));
+    }
     
     updates.forEach(({ productId, stock, inStock }) => {
       const product = products.find((p: any) => p.id === productId);
       if (product) {
         product.inStock = inStock;
         if (stock !== undefined) product.stock = stock;
-        product.updatedAt = new Date();
+        product.updatedAt = new Date().toISOString();
       }
     });
     
     await saveProductsBlob(products);
   } catch (error) {
     console.error("Error bulk updating inventory:", error);
+    throw error;
+  }
+}
+
+/**
+ * Admin Functions - Bulk update category (rename category)
+ */
+export async function bulkUpdateCategory(
+  oldCategory: string,
+  newCategory: string
+): Promise<void> {
+  try {
+    let products = await getProductsBlob();
+    
+    // If blob is empty, initialize with hardcoded products
+    if (products.length === 0) {
+      products = hardcodedProducts.map(p => ({
+        ...p,
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : new Date().toISOString(),
+      }));
+    }
+    
+    products.forEach((product: any) => {
+      if (product.category === oldCategory) {
+        product.category = newCategory;
+        product.updatedAt = new Date().toISOString();
+      }
+    });
+    
+    await saveProductsBlob(products);
+  } catch (error) {
+    console.error("Error bulk updating category:", error);
+    throw error;
+  }
+}
+
+/**
+ * Admin Functions - Delete category (delete all products in category)
+ */
+export async function deleteCategory(category: string): Promise<void> {
+  try {
+    let products = await getProductsBlob();
+    
+    // If blob is empty, initialize with hardcoded products
+    if (products.length === 0) {
+      products = hardcodedProducts.map(p => ({
+        ...p,
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : new Date().toISOString(),
+      }));
+    }
+    
+    // Filter products - use case-insensitive matching to ensure all products are deleted
+    const filtered = products.filter((p: any) => 
+      p.category && p.category.toLowerCase() !== category.toLowerCase()
+    );
+    
+    // Check if any products were actually deleted
+    if (filtered.length === products.length) {
+      // No products were deleted, which means the category doesn't exist
+      console.warn(`Category "${category}" not found or has no products`);
+    }
+    
+    await saveProductsBlob(filtered);
+  } catch (error) {
+    console.error("Error deleting category:", error);
     throw error;
   }
 }

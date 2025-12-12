@@ -51,32 +51,87 @@ export default function ProductCard({ product }: ProductCardProps) {
     ? calculateDiscount(product.originalPrice, product.price)
     : 0;
 
+  const stockCount = typeof product.stock === "number" ? product.stock : null;
+  const isOutOfStock = !product.inStock || stockCount === 0;
+  const isLowStock = stockCount !== null && stockCount > 0 && stockCount <= 5;
+
+  let inventoryBadgeLabel = "";
+  let inventoryBadgeClass = "";
+  let inventoryDetailText = "";
+  let inventoryDetailClass = "text-emerald-600";
+
+  if (isOutOfStock) {
+    inventoryBadgeLabel = "Back soon";
+    inventoryBadgeClass = "bg-rose-600 text-white";
+    inventoryDetailText = "Back in stock soon";
+    inventoryDetailClass = "text-rose-600";
+  } else if (isLowStock && stockCount !== null) {
+    inventoryBadgeLabel = `Only ${stockCount} left`;
+    inventoryBadgeClass = "bg-amber-500 text-white";
+    inventoryDetailText = "Selling out fast";
+    inventoryDetailClass = "text-amber-600";
+  } else if (stockCount !== null) {
+    inventoryBadgeLabel = `${stockCount} in stock`;
+    inventoryBadgeClass = "bg-emerald-600 text-white";
+    inventoryDetailText = "Ready to ship";
+    inventoryDetailClass = "text-emerald-600";
+  } else if (product.inStock) {
+    inventoryBadgeLabel = "Made to order";
+    inventoryBadgeClass = "bg-indigo-600 text-white";
+    inventoryDetailText = "Crafted on demand";
+    inventoryDetailClass = "text-indigo-600";
+  } else {
+    inventoryBadgeLabel = "Unavailable";
+    inventoryBadgeClass = "bg-rose-600 text-white";
+    inventoryDetailText = "Back in stock soon";
+    inventoryDetailClass = "text-rose-600";
+  }
+
   return (
     <Link
       href={`/product/${product.id}`}
-      className="group relative bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 border-2 border-purple-100 hover:border-purple-400 hover:scale-105 transform"
+      className="group relative bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 border-2 border-purple-100 hover:border-purple-400 hover:scale-[1.03] transform"
     >
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-yellow-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      
+      {/* Glowing effect on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-400/0 via-pink-400/0 to-purple-400/0 group-hover:from-purple-400/20 group-hover:via-pink-400/20 group-hover:to-purple-400/20 transition-all duration-500 blur-xl"></div>
+
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-purple-50 via-pink-50 to-yellow-50">
-        {/* Decorative corner accent */}
-        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-200/30 to-transparent rounded-bl-full z-0"></div>
+        {/* Decorative corner accent with animation */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-300/40 via-pink-300/30 to-transparent rounded-bl-full z-0 group-hover:scale-150 transition-transform duration-700"></div>
+        <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-pink-200/30 via-purple-200/20 to-transparent rounded-br-full z-0 group-hover:scale-125 transition-transform duration-700"></div>
+        
         <div className="relative w-full h-full z-10">
           <Image
             src={product.image}
             alt={product.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
+          
+          {/* Overlay gradient on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/0 via-transparent to-transparent group-hover:from-black/10 group-hover:via-transparent group-hover:to-transparent transition-all duration-500"></div>
         </div>
         {discount > 0 && (
-          <div className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-            {discount}% OFF
+          <div className="absolute top-3 left-3 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-2xl border-2 border-white/50 animate-pulse group-hover:scale-110 transition-transform duration-300 z-20">
+            <span className="relative z-10">{discount}% OFF</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full blur-sm opacity-75 -z-10"></div>
+          </div>
+        )}
+        {inventoryBadgeLabel && (
+          <div
+            className={`absolute bottom-3 left-3 px-3 py-1 rounded-full text-xs font-semibold shadow-lg z-20 ${inventoryBadgeClass}`}
+          >
+            {inventoryBadgeLabel}
           </div>
         )}
         {!product.inStock && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="bg-white px-4 py-2 rounded font-semibold">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-30">
+            <span className="bg-white/95 px-6 py-3 rounded-xl font-bold text-gray-800 shadow-2xl border-2 border-white">
               Out of Stock
             </span>
           </div>
@@ -84,52 +139,61 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Wishlist Button */}
         <button
           onClick={handleWishlistToggle}
-          className="absolute top-2 right-2 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+          className="absolute top-3 right-3 p-2.5 bg-white/95 backdrop-blur-md rounded-full hover:bg-white transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-110 z-20 border border-white/50"
           aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
         >
           <Heart
-            className={`w-5 h-5 transition-all ${
-              inWishlist ? "fill-pink-500 text-pink-500 scale-110" : "text-gray-600 hover:text-pink-400"
+            className={`w-5 h-5 transition-all duration-300 ${
+              inWishlist ? "fill-pink-500 text-pink-500 scale-110 animate-pulse" : "text-gray-600 hover:text-pink-500 hover:scale-110"
             }`}
           />
         </button>
       </div>
 
       {/* Product Info */}
-      <div className="p-4">
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+      <div className="p-5 relative z-10 bg-white/95 backdrop-blur-sm group-hover:bg-white transition-colors duration-300">
+        <p className="text-gray-700 text-sm mb-4 line-clamp-2 font-medium leading-relaxed group-hover:text-gray-900 transition-colors">
           {product.description}
         </p>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              {formatCurrency(product.price)}
-            </span>
-            {product.originalPrice && (
-              <span className="text-sm text-gray-400 line-through">
-                {formatCurrency(product.originalPrice)}
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent group-hover:from-purple-700 group-hover:via-pink-700 group-hover:to-purple-700 transition-all duration-300">
+                {formatCurrency(product.price)}
               </span>
-            )}
+              {product.originalPrice && (
+                <span className="text-sm text-gray-400 line-through font-medium">
+                  {formatCurrency(product.originalPrice)}
+                </span>
+              )}
+            </div>
+            <p className={`text-xs font-semibold mt-1 ${inventoryDetailClass}`}>
+              {inventoryDetailText}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={handleWishlistToggle}
-              className="p-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg hover:shadow-xl hover:scale-110"
+              className={`p-2.5 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 ${
+                inWishlist 
+                  ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white animate-pulse" 
+                  : "bg-gradient-to-r from-pink-100 to-rose-100 text-pink-600 hover:from-pink-500 hover:to-rose-500 hover:text-white"
+              }`}
               aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
             >
               <Heart
-                className={`w-5 h-5 transition-all ${
-                  inWishlist ? "fill-white" : ""
+                className={`w-5 h-5 transition-all duration-300 ${
+                  inWishlist ? "fill-white scale-110" : ""
                 }`}
               />
             </button>
             <button
               onClick={handleAddToCart}
               disabled={!product.inStock}
-              className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full hover:from-purple-700 hover:to-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl hover:scale-110"
+              className="p-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full hover:from-purple-700 hover:to-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 disabled:hover:scale-100 group/btn"
               aria-label="Add to cart"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingCart className="w-5 h-5 group-hover/btn:rotate-12 transition-transform duration-300" />
             </button>
           </div>
         </div>
