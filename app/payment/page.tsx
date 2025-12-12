@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/format";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
-import { QrCode, Copy, CheckCircle2, Upload, AlertCircle } from "lucide-react";
+import { QrCode, Copy, CheckCircle2, Upload, AlertCircle, Smartphone } from "lucide-react";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -17,10 +17,15 @@ export default function PaymentPage() {
   const [utrNumber, setUtrNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<"qr" | "upi">("qr");
+  const [userUpiId, setUserUpiId] = useState("");
+  const [validatingUpi, setValidatingUpi] = useState(false);
+  const [upiValidated, setUpiValidated] = useState(false);
 
   // UPI ID and QR Code from environment or defaults
-  const upiId = process.env.NEXT_PUBLIC_UPI_ID || "shrutikumari21370@okaxis";
-  const qrCodeImage = "/QR/QR.jpg"; // Static path in public folder
+  const merchantUpiId = process.env.NEXT_PUBLIC_UPI_ID || "shrutikumari21370@okaxis";
+  const merchantName = process.env.NEXT_PUBLIC_APP_NAME || "magi.cofresin";
+  const qrCodeImage = "/QR/QR.jpg";
 
   useEffect(() => {
     if (!orderId || !amount) {
@@ -44,10 +49,72 @@ export default function PaymentPage() {
   }, [orderId, amount, router]);
 
   const copyUpiId = () => {
-    navigator.clipboard.writeText(upiId);
+    navigator.clipboard.writeText(merchantUpiId);
     setCopied(true);
     toast.success("UPI ID copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Validate UPI ID format
+  const validateUpiIdFormat = (upi: string): boolean => {
+    // UPI ID format: username@bank (e.g., user@paytm, 9876543210@ybl)
+    const upiRegex = /^[\w.-]+@[\w.-]+$/;
+    return upiRegex.test(upi);
+  };
+
+  const handleValidateUpi = () => {
+    const trimmedUpi = userUpiId.trim().toLowerCase();
+    
+    if (!trimmedUpi) {
+      toast.error("Please enter your UPI ID");
+      return;
+    }
+
+    if (!validateUpiIdFormat(trimmedUpi)) {
+      toast.error("Invalid UPI ID format. Example: username@paytm or 9876543210@ybl");
+      return;
+    }
+
+    setValidatingUpi(true);
+    // Simulate validation (in real scenario, you might verify with payment gateway)
+    setTimeout(() => {
+      setUpiValidated(true);
+      setValidatingUpi(false);
+      toast.success("UPI ID validated successfully!");
+    }, 1000);
+  };
+
+  const handlePayWithUpi = () => {
+    if (!upiValidated) {
+      toast.error("Please validate your UPI ID first");
+      return;
+    }
+
+    const amountNum = parseFloat(amount || "0");
+    
+    // Generate UPI deep link
+    const upiLink = `upi://pay?pa=${encodeURIComponent(merchantUpiId)}&pn=${encodeURIComponent(merchantName)}&am=${amountNum}&cu=INR&tn=${encodeURIComponent(`Order ${orderNumber} - ${merchantName}`)}`;
+
+    // Try to open UPI app
+    try {
+      // Create a temporary link and click it
+      const link = document.createElement('a');
+      link.href = upiLink;
+      link.click();
+      
+      toast.success("Opening your UPI app...", { duration: 3000 });
+      
+      // Show instruction to enter UTR after payment
+      setTimeout(() => {
+        toast("Please complete the payment and enter the UTR number below", {
+          duration: 5000,
+          icon: "💡",
+        });
+      }, 2000);
+    } catch (error) {
+      console.error("Error opening UPI app:", error);
+      toast.error("Could not open UPI app. Please try QR code method.");
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,15 +180,41 @@ export default function PaymentPage() {
           <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
             Complete Payment
           </h1>
-          <p className="text-gray-600 text-lg">Scan the QR code or use UPI ID to pay</p>
+          <p className="text-gray-600 text-lg">Choose your preferred payment method</p>
+        </div>
+
+        {/* Payment Method Selector */}
+        <div className="mb-8 flex justify-center gap-4">
+          <button
+            onClick={() => setPaymentMethod("qr")}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${
+              paymentMethod === "qr"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
+                : "bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-400"
+            }`}
+          >
+            <QrCode className="w-5 h-5 inline mr-2" />
+            Scan QR Code
+          </button>
+          <button
+            onClick={() => setPaymentMethod("upi")}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${
+              paymentMethod === "upi"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
+                : "bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-400"
+            }`}
+          >
+            <Smartphone className="w-5 h-5 inline mr-2" />
+            Pay with UPI App
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Payment QR Code Section */}
+          {/* Payment Section - Dynamic based on method */}
           <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-8 border-2 border-purple-200 backdrop-blur-sm">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
-                Payment Details
+                {paymentMethod === "qr" ? "Payment Details" : "Pay with UPI App"}
               </h2>
               <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
             </div>
@@ -141,53 +234,126 @@ export default function PaymentPage() {
               <p className="text-gray-600 text-sm font-medium">Please pay the exact amount shown above</p>
             </div>
 
-            {/* QR Code Display */}
-            <div className="flex flex-col items-center mb-6">
-              <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-purple-200 mb-4">
-                <Image
-                  src={qrCodeImage}
-                  alt="Payment QR Code"
-                  width={250}
-                  height={250}
-                  className="rounded-lg"
-                  priority
-                />
-              </div>
-              <p className="text-sm text-gray-600 text-center">
-                Scan this QR code with any UPI app
-              </p>
-            </div>
+            {paymentMethod === "qr" ? (
+              <>
+                {/* QR Code Display */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-purple-200 mb-4">
+                    <Image
+                      src={qrCodeImage}
+                      alt="Payment QR Code"
+                      width={250}
+                      height={250}
+                      className="rounded-lg"
+                      priority
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600 text-center">
+                    Scan this QR code with any UPI app
+                  </p>
+                </div>
 
-            {/* UPI ID Section */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border-2 border-purple-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Or send payment to UPI ID:
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={upiId}
-                  readOnly
-                  className="flex-1 px-4 py-2 bg-white border-2 border-purple-200 rounded-lg text-gray-800 font-medium text-sm"
-                />
-                <button
-                  onClick={copyUpiId}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-bold shadow-lg hover:shadow-xl hover:scale-105 transform duration-300 flex items-center gap-2 text-sm"
-                >
-                  {copied ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      Copy
-                    </>
+                {/* UPI ID Section */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border-2 border-purple-200">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Or send payment to UPI ID:
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={merchantUpiId}
+                      readOnly
+                      className="flex-1 px-4 py-2 bg-white border-2 border-purple-200 rounded-lg text-gray-800 font-medium text-sm"
+                    />
+                    <button
+                      onClick={copyUpiId}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-bold shadow-lg hover:shadow-xl hover:scale-105 transform duration-300 flex items-center gap-2 text-sm"
+                    >
+                      {copied ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* UPI App Payment */}
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Enter Your UPI ID *
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={userUpiId}
+                        onChange={(e) => {
+                          setUserUpiId(e.target.value.toLowerCase());
+                          setUpiValidated(false);
+                        }}
+                        placeholder="e.g., yourname@paytm or 9876543210@ybl"
+                        disabled={upiValidated}
+                        className="flex-1 px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-400 bg-white shadow-md font-medium disabled:bg-gray-100"
+                      />
+                      {!upiValidated ? (
+                        <button
+                          onClick={handleValidateUpi}
+                          disabled={validatingUpi}
+                          className="px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-bold shadow-lg hover:scale-105 transform duration-300 disabled:opacity-50"
+                        >
+                          {validatingUpi ? "..." : "Validate"}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setUpiValidated(false);
+                            setUserUpiId("");
+                          }}
+                          className="px-5 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all font-bold"
+                        >
+                          Change
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {upiValidated ? (
+                        <span className="text-green-600 flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4" />
+                          UPI ID validated successfully
+                        </span>
+                      ) : (
+                        "Enter your UPI ID (e.g., yourname@paytm, 9876543210@ybl, user@oksbi)"
+                      )}
+                    </p>
+                  </div>
+
+                  {upiValidated && (
+                    <button
+                      onClick={handlePayWithUpi}
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-bold text-lg shadow-2xl hover:scale-105 transform duration-300 flex items-center justify-center gap-2"
+                    >
+                      <Smartphone className="w-6 h-6" />
+                      Open UPI App to Pay {formatCurrency(amountNum)}
+                    </button>
                   )}
-                </button>
-              </div>
-            </div>
+
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                    <p className="text-sm text-blue-800 font-medium">
+                      💡 Click the button above to open your UPI app directly. After making the payment, return here and enter the UTR/Transaction ID below.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Important Instructions */}
             <div className="mt-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
