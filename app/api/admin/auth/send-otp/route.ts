@@ -69,14 +69,11 @@ export async function POST(request: NextRequest) {
       await sendOTPviaSMS(normalizedPhone, otp);
     } catch (smsError) {
       console.error("Error sending SMS:", smsError);
-      // For development, we'll still return success but log the OTP
-      console.log(`[DEV] OTP for ${normalizedPhone}: ${otp}`);
     }
     
     return NextResponse.json({
       success: true,
       message: "OTP sent successfully",
-      // In development, include OTP in response (remove in production)
       ...(process.env.NODE_ENV === "development" && { otp }),
     });
   } catch (error: any) {

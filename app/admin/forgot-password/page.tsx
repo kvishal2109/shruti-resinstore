@@ -48,10 +48,7 @@ export default function ForgotPasswordPage() {
         setNormalizedPhoneNumber(normalizedPhone);
         setStep("otp");
         toast.success("OTP sent successfully!");
-        // In development, show OTP in console
         if (data.otp) {
-          console.log("OTP:", data.otp);
-          console.log("Stored phone:", normalizedPhone);
           toast.success(`OTP: ${data.otp}`, { duration: 10000 });
         }
       } else {
@@ -91,7 +88,6 @@ export default function ForgotPasswordPage() {
       // Use the stored normalized phone number (from when OTP was sent)
       // If not available, normalize the current phone
       const phoneToUse = normalizedPhoneNumber || normalizePhone(phone);
-      console.log("Verifying OTP with phone:", phoneToUse, "OTP:", otp);
       
       const response = await fetch("/api/admin/auth/reset-password", {
         method: "POST",

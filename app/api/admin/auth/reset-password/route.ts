@@ -66,32 +66,17 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify OTP (use normalized phone for lookup)
-    console.log("Attempting OTP verification:", {
-      normalizedPhone,
-      otpLength: otp?.length,
-      otpProvided: otp,
-    });
-    
     const isValidOTP = verifyOTP(normalizedPhone, otp);
     if (!isValidOTP) {
-      console.error("OTP verification failed", {
-        phone: normalizedPhone,
-        otpLength: otp?.length,
-        otpProvided: otp,
-        note: "OTP might be expired, incorrect, or phone number mismatch",
-      });
       return NextResponse.json(
         { error: "Invalid or expired OTP. Please request a new OTP." },
         { status: 401 }
       );
     }
     
-    console.log("OTP verified successfully for", normalizedPhone);
-    
     // Reset password
     try {
       await resetPassword(newPassword);
-      console.log("Password reset successfully for", normalizedPhone);
     } catch (passwordError: any) {
       console.error("Error saving password:", passwordError);
       throw passwordError; // Re-throw to be caught by outer catch

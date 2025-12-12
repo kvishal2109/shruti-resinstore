@@ -7,7 +7,6 @@ import {
   getWishlistFromStorage,
   addToCart,
 } from "@/lib/utils/cart";
-// Removed direct blob import - using API route instead
 import ProductCard from "@/components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { calculateDiscount } from "@/lib/utils/format";
