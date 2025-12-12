@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
 import * as BlobOrders from "@/lib/blob/orders";
 
+// Cache orders API for 1 minute (orders update more frequently)
+export const revalidate = 60;
+
 export async function GET(request: NextRequest) {
   try {
     const authError = await requireAuth(request);

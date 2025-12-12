@@ -2,7 +2,10 @@ import useSWR, { SWRConfiguration } from "swr";
 import { Product } from "@/types";
 
 const fetcher = async (url: string): Promise<Product[]> => {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    // Use Next.js cache for 5 minutes
+    next: { revalidate: 300 },
+  });
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -18,7 +21,9 @@ export function useAdminProducts(config?: SWRConfiguration<Product[]>) {
     fetcher,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 30_000,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60_000, // 60 seconds (increased from 30)
+      focusThrottleInterval: 60_000, // Throttle focus revalidation
       ...config,
     }
   );

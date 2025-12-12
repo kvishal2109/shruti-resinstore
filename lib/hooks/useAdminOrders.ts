@@ -2,7 +2,10 @@ import useSWR, { SWRConfiguration } from "swr";
 import { Order } from "@/types";
 
 const fetcher = async (url: string): Promise<Order[]> => {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    // Use Next.js cache for 1 minute (orders update more frequently)
+    next: { revalidate: 60 },
+  });
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -18,7 +21,9 @@ export function useAdminOrders(config?: SWRConfiguration<Order[]>) {
     fetcher,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 30_000,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30_000, // 30 seconds (orders change more frequently than products)
+      focusThrottleInterval: 30_000,
       ...config,
     }
   );

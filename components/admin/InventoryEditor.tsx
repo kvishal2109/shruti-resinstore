@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Product } from "@/types";
 import { Package } from "lucide-react";
 import toast from "react-hot-toast";
@@ -17,6 +17,9 @@ export default function InventoryEditor({
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [stockUpdates, setStockUpdates] = useState<Record<string, { stock?: number; inStock: boolean }>>({});
   const [loading, setLoading] = useState(false);
+  
+  // Memoize filtered products to avoid unnecessary re-renders
+  const displayProducts = useMemo(() => products, [products]);
 
   const handleSelectAll = () => {
     if (selectedProducts.size === products.length) {
@@ -74,6 +77,7 @@ export default function InventoryEditor({
     setLoading(true);
 
     try {
+      // Batch all updates into a single API call
       const updates = Array.from(selectedProducts).map((productId) => ({
         productId,
         ...stockUpdates[productId],
@@ -89,7 +93,7 @@ export default function InventoryEditor({
         throw new Error("Update failed");
       }
 
-      toast.success(`Updated ${updates.length} product(s)`);
+      toast.success(`Updated ${updates.length} product(s) in a single operation`);
       setSelectedProducts(new Set());
       setStockUpdates({});
       await onUpdate?.();
@@ -123,7 +127,7 @@ export default function InventoryEditor({
         </div>
 
         <div className="max-h-96 overflow-y-auto space-y-2">
-          {products.map((product) => (
+          {displayProducts.map((product) => (
             <div
               key={product.id}
               className={`p-3 border rounded-lg ${

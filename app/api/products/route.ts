@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAllProducts, getProductsByCategory } from "@/lib/blob/products";
 
+// Cache public products API for 5 minutes
+export const revalidate = 300;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

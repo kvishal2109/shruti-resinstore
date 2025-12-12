@@ -3,6 +3,9 @@ import { requireAuth } from "@/lib/admin/auth";
 import * as BlobProducts from "@/lib/blob/products";
 import { Product } from "@/types";
 
+// Cache products API for 5 minutes
+export const revalidate = 300;
+
 export async function GET(request: NextRequest) {
   try {
     const authError = await requireAuth(request);

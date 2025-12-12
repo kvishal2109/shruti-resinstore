@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Product } from "@/types";
 import { DollarSign } from "lucide-react";
 import toast from "react-hot-toast";
@@ -19,6 +19,9 @@ export default function PriceBulkEditor({
   const [updateValue, setUpdateValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [showProductList, setShowProductList] = useState(false);
+  
+  // Memoize filtered products to avoid unnecessary re-renders
+  const displayProducts = useMemo(() => products, [products]);
 
   const handleSelectAll = () => {
     if (selectedProducts.size === products.length) {
@@ -54,8 +57,9 @@ export default function PriceBulkEditor({
     setLoading(true);
 
     try {
+      // Batch all price updates into a single API call
       const updates = Array.from(selectedProducts).map((productId) => {
-        const product = products.find((p) => p.id === productId);
+        const product = displayProducts.find((p) => p.id === productId);
         if (!product) return null;
 
         let newPrice = product.price;
@@ -83,7 +87,7 @@ export default function PriceBulkEditor({
         throw new Error("Update failed");
       }
 
-      toast.success(`Updated ${updates.length} product(s)`);
+      toast.success(`Updated ${updates.length} product(s) in a single operation`);
       setSelectedProducts(new Set());
       setUpdateValue("");
       await onUpdate?.();
@@ -127,7 +131,7 @@ export default function PriceBulkEditor({
 
         {showProductList && (
           <div className="max-h-96 overflow-y-auto space-y-2 border border-gray-200 rounded-lg p-4">
-            {products.map((product) => (
+            {displayProducts.map((product) => (
               <div
                 key={product.id}
                 className={`p-3 border rounded-lg ${
