@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { getProductsByCatalog } from "@/lib/blob/products";
 
 interface Params {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(_request: Request, { params }: Params) {
   try {
-    const products = await getProductsByCatalog(params.id);
+    const { id } = await params;
+    const products = await getProductsByCatalog(id);
     return NextResponse.json({ success: true, products });
   } catch (error) {
     console.error("Error fetching products for catalog:", error);
