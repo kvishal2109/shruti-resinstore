@@ -68,8 +68,8 @@ export default function WishlistPage() {
       try {
         const response = await fetch("/api/products");
         const result = await response.json();
-        const allProducts = result.products || [];
-        const wishlistProducts = allProducts.filter((p) =>
+        const allProducts: Product[] = result.products || [];
+        const wishlistProducts = allProducts.filter((p: Product) =>
           wishlistIds.includes(p.id)
         );
         setProducts(wishlistProducts);
