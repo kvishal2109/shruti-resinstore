@@ -103,11 +103,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Reset password error:", error);
+    const errorPhone = phone || "unknown";
     console.error("Error details:", {
       message: error?.message,
       stack: error?.stack,
-      phone: phone,
-      normalizedPhone: normalizePhoneNumber(phone || ""),
+      phone: errorPhone,
+      normalizedPhone: normalizePhoneNumber(errorPhone),
     });
     
     // Provide more specific error messages
