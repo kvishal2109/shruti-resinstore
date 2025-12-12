@@ -31,8 +31,11 @@ function normalizePhoneNumber(phone: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  let phone: string | undefined;
   try {
-    const { phone, otp, newPassword } = await request.json();
+    const body = await request.json();
+    phone = body.phone;
+    const { otp, newPassword } = body;
     
     // Validate inputs
     if (!phone || !otp || !newPassword) {
