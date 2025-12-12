@@ -27,7 +27,9 @@ export default function InventoryPage() {
 
       <InventoryEditor
         products={products}
-        onUpdate={() => mutate()}
+        onUpdate={async () => {
+          await mutate();
+        }}
       />
     </div>
   );
