@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/format";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { QrCode, Copy, CheckCircle2, Upload, AlertCircle, Smartphone } from "lucide-react";
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
@@ -460,6 +460,14 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-gray-600">Loading payment...</div></div>}>
+      <PaymentPageContent />
+    </Suspense>
   );
 }
 

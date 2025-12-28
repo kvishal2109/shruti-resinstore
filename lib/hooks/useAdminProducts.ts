@@ -32,7 +32,7 @@ export function useAdminProducts(config?: SWRConfiguration<Product[]>) {
 
   // Enhanced mutate function with proper error handling
   const mutate: KeyedMutator<Product[]> = async (data?, options?) => {
-    if (options && 'revalidate' in options && options.revalidate === false) {
+    if (options && typeof options === 'object' && 'revalidate' in options && options.revalidate === false) {
       return swr.mutate(data, options);
     }
     

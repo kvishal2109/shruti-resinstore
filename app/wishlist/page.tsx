@@ -175,7 +175,7 @@ function WishlistItemCard({ product, onMoveToCart }: WishlistItemCardProps) {
   const hasPriceDrop =
     typeof product.originalPrice === "number" &&
     product.originalPrice > product.price;
-  const discount = hasPriceDrop ? calculateDiscount(product.originalPrice, product.price) : 0;
+  const discount = hasPriceDrop && product.originalPrice ? calculateDiscount(product.originalPrice, product.price) : 0;
 
   const similarLink =
     product.category && product.subcategory

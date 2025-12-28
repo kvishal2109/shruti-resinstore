@@ -32,12 +32,7 @@ export async function createOrder(
       },
       items: items.map((item) => ({
         productId: item.productId,
-        product: {
-          id: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          image: item.product.image,
-        },
+        product: item.product,
         quantity: item.quantity,
       })),
       subtotal: subtotal || totalAmount,

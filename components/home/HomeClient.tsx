@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Product } from "@/types";
 import { Search, Sparkles, Home as HomeIcon, Sofa, Heart, Gem, ArrowRight, MapPin, MessageCircle, Youtube, Instagram, Facebook, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
@@ -61,7 +61,7 @@ interface HomeClientProps {
   initialCategories: string[];
 }
 
-export default function HomeClient({ initialProducts, initialCategories }: HomeClientProps) {
+function HomeClientContent({ initialProducts, initialCategories }: HomeClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [categories, setCategories] = useState<string[]>(initialCategories);
   
@@ -1800,5 +1800,13 @@ export default function HomeClient({ initialProducts, initialCategories }: HomeC
         </div>
       </section>
     </div>
+  );
+}
+
+export default function HomeClient({ initialProducts, initialCategories }: HomeClientProps) {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-gray-600">Loading...</div></div>}>
+      <HomeClientContent initialProducts={initialProducts} initialCategories={initialCategories} />
+    </Suspense>
   );
 }
