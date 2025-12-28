@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Product } from "@/types";
-import { Search, Sparkles, Home as HomeIcon, Sofa, Heart, Gem, ArrowRight, MapPin, MessageCircle, Youtube, Instagram, Facebook, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
+import { Search, Sparkles, Home as HomeIcon, Sofa, Heart, Gem, ArrowRight, MapPin, MessageCircle, Youtube, Instagram, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { subcategories as staticSubcategories } from "@/lib/data/subcategories";
@@ -1735,12 +1735,12 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                       <span className="text-gray-700 font-serif">YouTube</span>
                     </div>
                     <a 
-                      href={`https://youtube.com/@magi.cofresin`}
+                      href={`https://www.youtube.com/@Resinart_by_shrutii`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-purple-600 hover:text-purple-800 font-serif transition-colors"
                     >
-                      @magi.cofresin
+                      @Resinart_by_shrutii
                     </a>
                   </div>
 
@@ -1751,21 +1751,6 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                     </div>
                     <a 
                       href={`https://instagram.com/magi.cofresin`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-purple-600 hover:text-purple-800 font-serif transition-colors"
-                    >
-                      @magi.cofresin
-                    </a>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Facebook className="w-5 h-5 text-blue-600" />
-                      <span className="text-gray-700 font-serif">Facebook</span>
-                    </div>
-                    <a 
-                      href={`https://facebook.com/magi.cofresin`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-purple-600 hover:text-purple-800 font-serif transition-colors"
@@ -1799,6 +1784,13 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-100 py-4 text-center border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          Website made by <a href="mailto:vishalcr7m10@gmail.com" className="text-purple-600 hover:text-purple-800 font-medium transition-colors">Vishal Yadav</a> (vishalcr7m10@gmail.com)
+        </p>
+      </footer>
     </div>
   );
 }
