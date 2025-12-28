@@ -13,6 +13,7 @@ interface MigrationStatus {
 interface MigrationResult {
   success: boolean;
   message: string;
+  error?: string;
   total: number;
   successful: number;
   failed: number;
