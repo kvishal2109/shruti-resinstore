@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
 import { getAllOrders } from "@/lib/supabase/orders";
 
-// Cache orders API for 1 minute (orders update more frequently)
-export const revalidate = 60;
+// Force dynamic rendering for admin routes
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
